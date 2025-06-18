@@ -1,5 +1,6 @@
 import express from "express";
 import bodyParser from "body-parser";
+import fs from "fs";
 
 const app = express();
 const port = 3000;
@@ -27,8 +28,6 @@ app.get("/", (req, res) => {
   res.render("./index.ejs", { posts });
 });
 
-let count = 1;
-
 app.post("/submit", (req, res) => {
   const d = new Date();
   const post = {
@@ -43,6 +42,7 @@ app.post("/submit", (req, res) => {
   if (post.title !== "" && post.content !== "") {
     count++;
     posts.push(post);
+    fs.writeFileSync("posts.json", JSON.stringify(posts, null, 2));
   }
 
   res.render("index.ejs", { posts });
@@ -64,6 +64,8 @@ app.post("/update/:id", (req, res) => {
   posts[index].description = req.body.description;
   posts[index].content = req.body.content;
 
+  fs.writeFileSync("posts.json", JSON.stringify(posts, null, 2));
+
   res.redirect("/");
 });
 
@@ -71,6 +73,9 @@ app.get("/delete/:id", (req, res) => {
   const id = req.params.id;
   const index = posts.findIndex((p) => p.id == id);
   posts.splice(index, 1);
+
+  posts = posts.filter((p) => p.id != req.params.id);
+  fs.writeFileSync("posts.json", JSON.stringify(posts, null, 2));
 
   res.redirect("/");
 });
@@ -87,3 +92,11 @@ app.listen(port, (req, res) => {
 });
 
 let posts = [];
+try {
+  const data = fs.readFileSync("posts.json", "utf-8");
+  posts = JSON.parse(data);
+} catch (err) {
+  console.log("No posts.json file found or it's empty, starting fresh.");
+}
+
+let count = posts.length + 1;
